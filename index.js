@@ -1,3 +1,5 @@
+'use strict';
+
 const Z = require('zetkin');
 
 
@@ -9,7 +11,7 @@ const defaultOpts = {
 };
 
 
-export function initialize(opts) {
+function initialize(opts) {
     opts = Object.assign({}, defaultOpts, opts);
 
     return (req, res, next) => {
@@ -24,7 +26,7 @@ export function initialize(opts) {
     };
 }
 
-export function callback(opts) {
+function callback(opts) {
     opts = Object.assign({}, defaultOpts, opts);
 
     if (!opts.app || !opts.app.id || !opts.app.key) {
@@ -48,7 +50,7 @@ export function callback(opts) {
     }
 }
 
-export function validate(opts) {
+function validate(opts) {
     opts = Object.assign({}, defaultOpts, opts);
 
     if (!opts.app || !opts.app.id || !opts.app.key) {
@@ -70,7 +72,7 @@ export function validate(opts) {
     }
 }
 
-export function logout(opts) {
+function logout(opts) {
     opts = Object.assign({}, defaultOpts, opts);
 
     return (req, res, next) => {
@@ -86,6 +88,6 @@ export function logout(opts) {
 }
 
 
-export default {
+module.exports = {
     initialize, callback, validate, logout,
 };
