@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/zetkin/express-zetkin-auth/issues"
   },
-  "homepage": "https://github.com/zetkin/express-zetkin-auth#readme"
+  "homepage": "https://github.com/zetkin/express-zetkin-auth#readme",
+  "peerDependencies": {
+    "zetkin": "^0.7.0",
+    "express": "^4.12.0"
+  }
 }

@@ -1,0 +1,91 @@
+const Z = require('zetkin');
+
+
+const defaultOpts = {
+    cookieName: 'apiTicket',
+    defaultRedirPath: '',
+    logoutRedirPath: null,
+    loginUrl: 'https://login.zetk.in',
+};
+
+
+export function initialize(opts) {
+    opts = Object.assign({}, defaultOpts, opts);
+
+    return (req, res, next) => {
+        req.z = Z.construct();
+
+        let cookie = req.cookies[opts.cookieName];
+        if (cookie) {
+            req.z.setTicket(JSON.parse(cookie));
+        }
+
+        next();
+    };
+}
+
+export function callback(opts) {
+    opts = Object.assign({}, defaultOpts, opts);
+
+    if (!opts.app || !opts.app.id || !opts.app.key) {
+        throw 'auth.callback() requires app ID and key';
+    }
+
+    return (req, res, next) => {
+        let app = opts.app;
+        if (req.query.rsvp) {
+            req.z.init(app.id, app.key, req.query.rsvp, ticket => {
+                res.cookie(opts.cookieName, JSON.stringify(ticket));
+
+                // Redirect to specified redirection path, or to the default
+                // redirection path if no redirection path has been defined
+                res.redirect(req.query.redirPath || opts.defaultRedirPath);
+            });
+        }
+        else {
+            res.redirect(opts.defaultRedirPath);
+        }
+    }
+}
+
+export function validate(opts) {
+    opts = Object.assign({}, defaultOpts, opts);
+
+    if (!opts.app || !opts.app.id || !opts.app.key) {
+        throw 'auth.validate() requires app ID';
+    }
+
+    return (req, res, next) => {
+        // Try to get session to verify ticket
+        req.z.resource('session').get()
+            .then(() => {
+                req.isZetkinAuthenticated = true;
+                next();
+            })
+            .catch(() => {
+                res.redirect(opts.loginUrl
+                    + '?appId=' + opts.app.id
+                    + '&redirPath=' + req.path);
+            });
+    }
+}
+
+export function logout(opts) {
+    opts = Object.assign({}, defaultOpts, opts);
+
+    return (req, res, next) => {
+        res.clearCookie(opts.cookieName);
+        req.z.resource('session').del()
+            .then(() => {
+                res.redirect(opts.logoutRedirPath || opts.defaultRedirPath);
+            })
+            .catch(() => {
+                res.redirect(opts.defaultRedirPath);
+            });
+    }
+}
+
+
+export default {
+    initialize, callback, validate, logout,
+};
