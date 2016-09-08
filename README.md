@@ -8,6 +8,10 @@ endpoint handlers for:
 * Redirecting to, and handling redirects back from Zetkin Platform login flow
 * Logging out, destroying session and clearing cookie
 
+Note that this middleware is closely related to, but not the same as, the
+[Zetkin javascript SDK](https://github.com/zetkin/zetkin-js). This piece of
+documentation repeatedly refers to the Zetkin SDK or it's main `Z` class.
+
 ## Example
 The below example contains all the code necessary to set up authentication with
 the Zetkin API.
