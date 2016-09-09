@@ -5,7 +5,7 @@ const Z = require('zetkin');
 
 const defaultOpts = {
     cookieName: 'apiTicket',
-    defaultRedirPath: '',
+    defaultRedirPath: '/',
     logoutRedirPath: null,
     loginUrl: 'https://login.zetk.in',
 };
@@ -44,8 +44,11 @@ function callback(opts) {
                 res.redirect(req.query.redirPath || opts.defaultRedirPath);
             });
         }
-        else {
+        else if (opts.defaultRedirPath != req.path) {
             res.redirect(opts.defaultRedirPath);
+        }
+        else {
+            next();
         }
     }
 }
