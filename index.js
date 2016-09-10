@@ -68,6 +68,7 @@ function validate(opts) {
                 next();
             })
             .catch(() => {
+                res.clearCookie(opts.cookieName);
                 res.redirect(opts.loginUrl
                     + '?appId=' + opts.app.id
                     + '&redirPath=' + req.path);
