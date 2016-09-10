@@ -65,6 +65,11 @@ function validate(opts) {
         req.z.resource('session').get()
             .then(() => {
                 req.isZetkinAuthenticated = true;
+
+                // While validating, the ticket may have been updated, e.g. if
+                // the previous ticket had expired. Store new ticket in cookie.
+                res.cookie(opts.cookieName, JSON.stringify(req.z.getTicket()));
+
                 next();
             })
             .catch(() => {
