@@ -22,7 +22,10 @@ function initialize(opts) {
             req.z.setTicket(JSON.parse(cookie));
         }
 
-        next();
+        // Initialize without an RSVP to at least get an application ticket
+        req.z.init(opts.app.id, opts.app.key, null, ticket => {
+            next();
+        });
     };
 }
 
