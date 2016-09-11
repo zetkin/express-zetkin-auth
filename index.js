@@ -56,7 +56,7 @@ function callback(opts) {
     }
 }
 
-function validate(opts) {
+function validate(opts, preventRedirect) {
     opts = Object.assign({}, defaultOpts, opts);
 
     if (!opts.app || !opts.app.id || !opts.app.key) {
@@ -77,9 +77,15 @@ function validate(opts) {
             })
             .catch(() => {
                 res.clearCookie(opts.cookieName);
-                res.redirect(opts.loginUrl
-                    + '?appId=' + opts.app.id
-                    + '&redirPath=' + req.path);
+
+                if (preventRedirect) {
+                    next();
+                }
+                else {
+                    res.redirect(opts.loginUrl
+                        + '?appId=' + opts.app.id
+                        + '&redirPath=' + req.path);
+                }
             });
     }
 }
