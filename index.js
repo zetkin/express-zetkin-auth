@@ -24,6 +24,7 @@ function initialize(opts) {
 
         // Initialize without an RSVP to at least get an application ticket
         req.z.init(opts.app.id, opts.app.key, null, ticket => {
+            res.cookie(opts.cookieName, JSON.stringify(ticket));
             next();
         });
     };
