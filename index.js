@@ -20,13 +20,15 @@ function initialize(opts) {
         let cookie = req.cookies[opts.cookieName];
         if (cookie) {
             req.z.setTicket(JSON.parse(cookie));
-        }
-
-        // Initialize without an RSVP to at least get an application ticket
-        req.z.init(opts.app.id, opts.app.key, null, ticket => {
-            res.cookie(opts.cookieName, JSON.stringify(ticket));
             next();
-        });
+        }
+        else {
+            // Initialize without an RSVP to at least get an application ticket
+            req.z.init(opts.app.id, opts.app.key, null, ticket => {
+                res.cookie(opts.cookieName, JSON.stringify(ticket));
+                next();
+            });
+        }
     };
 }
 
