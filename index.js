@@ -47,7 +47,8 @@ function callback(opts) {
 
                 // Redirect to specified redirection path, or to the default
                 // redirection path if no redirection path has been defined
-                res.redirect(req.query.redirPath || opts.defaultRedirPath);
+                res.redirect(req.query.redirPath?
+                    decodeURIComponent(req.query.redirPath) : opts.defaultRedirPath);
             });
         }
         else if (opts.defaultRedirPath != req.path) {
@@ -87,7 +88,7 @@ function validate(opts, preventRedirect) {
                 else {
                     res.redirect(opts.loginUrl
                         + '?appId=' + opts.app.id
-                        + '&redirPath=' + req.path);
+                        + '&redirPath=' + encodeURIComponent(req.url));
                 }
             });
     }
