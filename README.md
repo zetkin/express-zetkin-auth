@@ -3,8 +3,8 @@ Express middleware for dealing with common tasks related to authentication and
 authorization with the Zetkin Platform. It contains middleware functions and
 endpoint handlers for:
 
-* Storing and retrieving Zetkin API ticket from cookies
-* Validating ticket ahead of endpoints that require it
+* Storing and retrieving Zetkin API token from cookies
+* Validating token ahead of endpoints that require it
 * Redirecting to, and handling redirects back from Zetkin Platform login flow
 * Logging out, destroying session and clearing cookie
 
@@ -22,12 +22,11 @@ import auth from 'express-zetkin-auth';
 const authOpts = {
     app: {
         id: "myAppId",
-        key: "mySecretAppKey"
+        secret: "mySecretAppKey"
     }
 };
 
-app.use(auth.initialize());
-app.get('/callback', auth.callback(authOpts));
+app.use(auth.initialize(authOpts));
 app.get('/logout', auth.logout());
 
 // Uses validate() to make sure user is logged in
@@ -39,11 +38,12 @@ app.get('/my/page', auth.validate(authOpts), (req, res) => {
         });
 });
 ```
+
 An anonymous user that tries to access /my/page will be redirected to the Zetkin
 Platform login flow where they will be asked to log in and authorize access to
 the Zetkin API to our application. The user will then be redirected back to
-/my/page (via the callback endpoint) where they will now be able to access the
-data retrieved using the Zetkin SDK.
+/my/page where they will now be able to access the data retrieved using the
+Zetkin SDK.
 
 ## Options
 All functions accept a single attribute which should be an object with the
@@ -51,13 +51,13 @@ following format.
 
 ```javascript
 const authOpts = {
-    cookieName: "apiTicket",                // Optional
+    cookieName: "apiToken",                 // Optional
     defaultRedirPath: "",                   // Optional
     logoutRedirPath: "",                    // Optional
-    loginUrl: "https://login.zetk.in",      // Optional
+    zetkinDomain: "zetk.in",                // Optional
     app: {                                  // Required
         id: "myAppId",
-        key: "mySecretAppKey"
+        secret: "myAppSecret"
     }
 };
 ```
@@ -79,13 +79,13 @@ other means.
 This is the name used to store the serialized user ticket in a browser cookie,
 which can then be accessed on the client to make requests directly.
 
-### Login URL (`loginUrl`)
-This is the URL to which users should be redirected if they need to log in to
-the Zetkin Platform and grant the application access.
+### Zetkin domain (`zetkinDomain`)
+This is the domain on which Zetkin is running, by default this is the normal
+Zetkin instance at zetk.in (api.zetk.in, login.zetk.in etc).
 
 This attribute should only be used explicitly in Zetkin development when the log
 in portal is running on the Zetkin development server or locally. The default
-value https://login.zetk.in is correct for any other case.
+value zetk.in is correct for any other case.
 
 ### Paths for redirects (`defaultRedirPath` and `logoutRedirPath`)
 These values define where a user should be redirected after a successful logout
@@ -99,11 +99,12 @@ If no `logoutRedirPath` is defined, users will be redirected to the
 ## API reference
 ### `initialize(options)`
 This function creates a Zetkin SDK `Z` instance on the express `req` object and
-looks for a Zetkin API ticket in the cookies, using the name in the `cookieName`
-attribute on the options object.
+looks for a Zetkin API token in the cookies, using the name in the `cookieName`
+attribute on the options object. It also handles redirects back from the login
+flow.
 
 ```javascript
-app.use(initialize());
+app.use(initialize(authOpts));
 ```
 
 Adding the `initialize()` middleware like this makes an instance of the Zetkin
@@ -133,34 +134,6 @@ app.all([ '/a/protected/path', '/another/protected/path' ], validate(opts));
 
 The user will be required to log in before returning to the application, where
 the `callback()` endpoint can be used to finish the login flow.
-
-### `callback(options)`
-This function creates an endpoint suitable for dealing with Zetkin Platform
-authentication callbacks, i.e. the endpoint to which a user is redirected after
-successfully logging in, along with the user's RSVP token. The callback URL for
-an application is defined when registering the application.
-
-The endpoint function initializes the Zetkin SDK `Z` instance, trading in the
-RSVP token for a valid user API ticket and stores this in a cookie using the
-name in the `cookieName` option.
-
-For this to work, the endpoint requires the application credentials defined in
-the `app` options attribute.
-
-After successfully initializing the `Z` instance, the endpoint function sends a
-redirect to the correct path, which is either the path that was originally
-requested, or the default path as given by the `defaultRedirPath` option.
-
-```javascript
-let opts = {
-    app: {
-        id: 'myAppId',
-        key: 'mySecretAppKey'
-    }
-};
-
-app.get('/callback', callback(opts))
-```
 
 ### `logout(options)`
 This function creates an endpoint that instantly logs the current user out and

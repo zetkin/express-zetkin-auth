@@ -1,13 +1,14 @@
 'use strict';
 
 const Z = require('zetkin');
+const url = require('url');
 
 
 const defaultOpts = {
-    cookieName: 'apiTicket',
+    cookieName: 'apiToken',
     defaultRedirPath: '/',
     logoutRedirPath: null,
-    loginUrl: 'https://login.zetk.in',
+    zetkinDomain: 'zetk.in',
 };
 
 
@@ -15,57 +16,53 @@ function initialize(opts) {
     opts = Object.assign({}, defaultOpts, opts);
 
     return (req, res, next) => {
-        req.z = Z.construct();
+        req.z = Z.construct({
+            clientId: opts.app.id,
+            clientSecret: opts.app.secret,
+            zetkinDomain: opts.zetkinDomain,
+        });
 
         let cookie = req.cookies[opts.cookieName];
         if (cookie) {
-            req.z.setTicket(JSON.parse(cookie));
+            req.z.setToken(cookie);
             next();
         }
-        else {
-            // Initialize without an RSVP to at least get an application ticket
-            req.z.init(opts.app.id, opts.app.key, null, ticket => {
-                res.cookie(opts.cookieName, JSON.stringify(ticket));
-                next();
+        else if (req.query.code) {
+            const callbackUrl = url.format({
+                protocol: req.protocol,
+                host: req.get('host'),
+                pathname: req.path,
+                query: req.query,
             });
+
+            req.z.authenticate(callbackUrl)
+                .then(() => {
+                    res.cookie(opts.cookieName, req.z.getToken());
+
+                    // Redirect to same URL without the code
+                    let query = Object.assign({}, req.query);
+                    delete query.code;
+
+                    res.redirect(url.format({
+                        protocol: req.protocol,
+                        host: req.get('host'),
+                        pathname: req.path,
+                        query: query,
+                    }));
+                })
+                .catch(err => {
+                    // Redirect to same URL but without the code
+                    res.redirect(opts.defaultRedirPath);
+                });
+        }
+        else {
+            next();
         }
     };
 }
 
-function callback(opts) {
-    opts = Object.assign({}, defaultOpts, opts);
-
-    if (!opts.app || !opts.app.id || !opts.app.key) {
-        throw 'auth.callback() requires app ID and key';
-    }
-
-    return (req, res, next) => {
-        let app = opts.app;
-        if (req.query.rsvp) {
-            req.z.init(app.id, app.key, req.query.rsvp, ticket => {
-                res.cookie(opts.cookieName, JSON.stringify(ticket));
-
-                // Redirect to specified redirection path, or to the default
-                // redirection path if no redirection path has been defined
-                res.redirect(req.query.redirPath?
-                    decodeURIComponent(req.query.redirPath) : opts.defaultRedirPath);
-            });
-        }
-        else if (opts.defaultRedirPath != req.path) {
-            res.redirect(opts.defaultRedirPath);
-        }
-        else {
-            next();
-        }
-    }
-}
-
 function validate(opts, preventRedirect) {
     opts = Object.assign({}, defaultOpts, opts);
-
-    if (!opts.app || !opts.app.id || !opts.app.key) {
-        throw 'auth.validate() requires app ID';
-    }
 
     return (req, res, next) => {
         // Try to get session to verify ticket
@@ -75,7 +72,7 @@ function validate(opts, preventRedirect) {
 
                 // While validating, the ticket may have been updated, e.g. if
                 // the previous ticket had expired. Store new ticket in cookie.
-                res.cookie(opts.cookieName, JSON.stringify(req.z.getTicket()));
+                res.cookie(opts.cookieName, req.z.getToken());
 
                 next();
             })
@@ -86,9 +83,13 @@ function validate(opts, preventRedirect) {
                     next();
                 }
                 else {
-                    res.redirect(opts.loginUrl
-                        + '?appId=' + opts.app.id
-                        + '&redirPath=' + encodeURIComponent(req.url));
+                    const redirUrl = encodeURIComponent(url.format({
+                        protocol: req.protocol,
+                        host: req.get('host'),
+                        pathname: req.originalUrl,
+                    }));
+
+                    res.redirect(req.z.getLoginUrl(redirUrl));
                 }
             });
     }
@@ -111,5 +112,5 @@ function logout(opts) {
 
 
 module.exports = {
-    initialize, callback, validate, logout,
+    initialize, validate, logout,
 };
