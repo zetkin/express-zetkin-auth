@@ -24,7 +24,12 @@ function initialize(opts) {
 
         let cookie = req.cookies[opts.cookieName];
         if (cookie) {
-            req.z.setToken(cookie);
+            try {
+                req.z.setToken(cookie);
+            }
+            catch (err) {
+                res.clearCookie(opts.cookieName);
+            }
             next();
         }
         else if (req.query.code) {
