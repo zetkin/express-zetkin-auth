@@ -34,7 +34,7 @@ function initialize(opts) {
         }
         else if (req.query.code) {
             const callbackUrl = url.format({
-                protocol: req.protocol,
+                protocol: opts.ssl? 'https' : 'http',
                 host: req.get('host'),
                 pathname: req.path,
                 query: req.query,
@@ -49,14 +49,13 @@ function initialize(opts) {
                     delete query.code;
 
                     res.redirect(url.format({
-                        protocol: req.protocol,
+                        protocol: opts.ssl? 'https' : 'http',
                         host: req.get('host'),
                         pathname: req.path,
                         query: query,
                     }));
                 })
                 .catch(err => {
-                    // Redirect to same URL but without the code
                     res.redirect(opts.defaultRedirPath);
                 });
         }
@@ -89,7 +88,7 @@ function validate(opts, preventRedirect) {
                 }
                 else {
                     const redirUrl = encodeURIComponent(url.format({
-                        protocol: req.protocol,
+                        protocol: opts.ssl? 'https' : 'http',
                         host: req.get('host'),
                         pathname: req.originalUrl,
                     }));
