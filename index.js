@@ -9,6 +9,7 @@ const defaultOpts = {
     defaultRedirPath: '/',
     logoutRedirPath: null,
     zetkinDomain: 'zetk.in',
+    minAuthLevel: undefined,
 };
 
 
@@ -71,12 +72,31 @@ function validate(opts, preventRedirect) {
     return (req, res, next) => {
         // Try to get session to verify ticket
         req.z.resource('session').get()
-            .then(() => {
+            .then(result => {
                 req.isZetkinAuthenticated = true;
 
-                // While validating, the ticket may have been updated, e.g. if
-                // the previous ticket had expired. Store new ticket in cookie.
+                // While validating, the token may have been updated, e.g. if
+                // the previous token had expired. Store new ticket in cookie.
                 res.cookie(opts.cookieName, req.z.getToken());
+
+                if (opts.minAuthLevel) {
+                    let session = result.data.data;
+                    if (session.level < opts.minAuthLevel) {
+                        const redirUrl = encodeURIComponent(url.format({
+                            protocol: opts.ssl? 'https' : 'http',
+                            host: req.get('host'),
+                            pathname: req.originalUrl,
+                        }));
+
+                        let loginUrl = '//login.' + process.env.ZETKIN_DOMAIN + '/upgrade'
+                            + '?token=' + req.z.getToken()
+                            + '&redirect_uri=' + redirUrl;
+
+                        res.redirect(loginUrl);
+
+                        return;
+                    }
+                }
 
                 next();
             })
