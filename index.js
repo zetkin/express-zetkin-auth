@@ -152,6 +152,10 @@ function logout(opts) {
 }
 
 function setTokenCookies(req, res, opts) {
+    const cookieOpts = {
+        secure: opts.ssl,
+    };
+
     const ivBuf = Buffer.alloc(16);
     crypto.randomFillSync(ivBuf);
 
@@ -161,8 +165,8 @@ function setTokenCookies(req, res, opts) {
     encryptedTokenData += '$' + ivBuf.toString('hex');
 
     let tokenData = req.z.getTokenData();
-    res.cookie(opts.tokenCookieName, tokenData.access_token);
-    res.cookie(opts.sessionCookieName, encryptedTokenData);
+    res.cookie(opts.tokenCookieName, tokenData.access_token, cookieOpts);
+    res.cookie(opts.sessionCookieName, encryptedTokenData, cookieOpts);
 }
 
 module.exports = {
