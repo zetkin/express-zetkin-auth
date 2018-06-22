@@ -104,7 +104,7 @@ function validate(opts, preventRedirect) {
                         }));
 
                         let loginUrl = '//login.' + process.env.ZETKIN_DOMAIN + '/upgrade'
-                            + '?token=' + req.z.getToken()
+                            + '?access_token=' + req.z.getTokenData().access_token
                             + '&redirect_uri=' + redirUrl;
 
                         res.redirect(loginUrl);
