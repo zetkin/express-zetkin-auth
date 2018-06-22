@@ -1,20 +1,27 @@
 'use strict';
 
-const Z = require('zetkin');
+const crypto = require('crypto');
 const url = require('url');
+const Z = require('zetkin');
 
 
 const defaultOpts = {
-    cookieName: 'apiToken',
+    tokenCookieName: 'apiAccessToken',
+    sessionCookieName: 'apiSession',
     defaultRedirPath: '/',
     logoutRedirPath: null,
     zetkinDomain: 'zetk.in',
     minAuthLevel: undefined,
+    secret: null,
 };
 
 
 function initialize(opts) {
     opts = Object.assign({}, defaultOpts, opts);
+
+    if (!opts.secret || opts.secret.length != 24) {
+        throw 'Encryption secret must be a 24 character string!';
+    }
 
     return (req, res, next) => {
         req.z = Z.construct({
@@ -23,13 +30,21 @@ function initialize(opts) {
             zetkinDomain: opts.zetkinDomain,
         });
 
-        let cookie = req.cookies[opts.cookieName];
-        if (cookie) {
+        let session = req.cookies[opts.sessionCookieName];
+        if (session) {
             try {
-                req.z.setToken(cookie);
+                const [ encrypted, ivHex ] = session.split('$');
+                const ivBuf = Buffer.from(ivHex, 'hex');
+                const decipher = crypto.createDecipheriv('aes192', opts.secret, ivBuf);
+
+                let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+                decrypted += decipher.final('utf8');
+
+                req.z.setToken(decrypted);
             }
             catch (err) {
-                res.clearCookie(opts.cookieName);
+                res.clearCookie(opts.tokenCookieName);
+                res.clearCookie(opts.sessionCookieName);
             }
             next();
         }
@@ -43,7 +58,7 @@ function initialize(opts) {
 
             req.z.authenticate(callbackUrl)
                 .then(() => {
-                    res.cookie(opts.cookieName, req.z.getToken());
+                    setTokenCookies(req, res, opts);
 
                     // Redirect to same URL without the code
                     let query = Object.assign({}, req.query);
@@ -77,7 +92,7 @@ function validate(opts, preventRedirect) {
 
                 // While validating, the token may have been updated, e.g. if
                 // the previous token had expired. Store new ticket in cookie.
-                res.cookie(opts.cookieName, req.z.getToken());
+                setTokenCookies(req, res, opts);
 
                 if (opts.minAuthLevel) {
                     let session = result.data.data;
@@ -89,7 +104,7 @@ function validate(opts, preventRedirect) {
                         }));
 
                         let loginUrl = '//login.' + process.env.ZETKIN_DOMAIN + '/upgrade'
-                            + '?token=' + req.z.getToken()
+                            + '?access_token=' + req.z.getTokenData().access_token
                             + '&redirect_uri=' + redirUrl;
 
                         res.redirect(loginUrl);
@@ -101,7 +116,8 @@ function validate(opts, preventRedirect) {
                 next();
             })
             .catch(() => {
-                res.clearCookie(opts.cookieName);
+                res.clearCookie(opts.tokenCookieName);
+                res.clearCookie(opts.sessionCookieName);
 
                 if (preventRedirect) {
                     next();
@@ -123,7 +139,8 @@ function logout(opts) {
     opts = Object.assign({}, defaultOpts, opts);
 
     return (req, res, next) => {
-        res.clearCookie(opts.cookieName);
+        res.clearCookie(opts.tokenCookieName);
+        res.clearCookie(opts.sessionCookieName);
         req.z.resource('session').del()
             .then(() => {
                 res.redirect(opts.logoutRedirPath || opts.defaultRedirPath);
@@ -134,6 +151,19 @@ function logout(opts) {
     }
 }
 
+function setTokenCookies(req, res, opts) {
+    const ivBuf = Buffer.alloc(16);
+    crypto.randomFillSync(ivBuf);
+
+    const cipher = crypto.createCipheriv('aes192', opts.secret, ivBuf);
+    let encryptedTokenData = cipher.update(req.z.getToken(), 'utf8', 'hex');
+    encryptedTokenData += cipher.final('hex');
+    encryptedTokenData += '$' + ivBuf.toString('hex');
+
+    let tokenData = req.z.getTokenData();
+    res.cookie(opts.tokenCookieName, tokenData.access_token);
+    res.cookie(opts.sessionCookieName, encryptedTokenData);
+}
 
 module.exports = {
     initialize, validate, logout,
