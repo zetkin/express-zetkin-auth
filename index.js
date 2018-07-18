@@ -100,7 +100,8 @@ function validate(opts, preventRedirect) {
                         const redirUrl = encodeURIComponent(url.format({
                             protocol: opts.ssl? 'https' : 'http',
                             host: req.get('host'),
-                            pathname: req.originalUrl,
+                            pathname: req.baseUrl? (req.baseUrl + req.path) : req.path,
+                            query: req.query,
                         }));
 
                         let loginUrl = '//login.' + process.env.ZETKIN_DOMAIN + '/upgrade'
@@ -126,7 +127,8 @@ function validate(opts, preventRedirect) {
                     const redirUrl = encodeURIComponent(url.format({
                         protocol: opts.ssl? 'https' : 'http',
                         host: req.get('host'),
-                        pathname: req.originalUrl,
+                        pathname: req.baseUrl? (req.baseUrl + req.path) : req.path,
+                        query: req.query,
                     }));
 
                     res.redirect(req.z.getLoginUrl(redirUrl));
