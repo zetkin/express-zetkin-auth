@@ -135,6 +135,17 @@ app.all([ '/a/protected/path', '/another/protected/path' ], validate(opts));
 The user will be required to log in before returning to the application, where
 the `callback()` endpoint can be used to finish the login flow.
 
+### `login(options)`
+This function creates an endpoint that will redirect the user to the correct
+login URL, and then back to whatever is submitted as `redirPath` in the query
+string. This lets you easily create login links.
+
+```javascript
+app.get('/login', login(opts));
+```
+
+A login link could then point to _/login?redirPath=/restricted_.
+
 ### `logout(options)`
 This function creates an endpoint that instantly logs the current user out and
 redirects them to the path given by `logoutRedirPath`, or `defaultRedirPath` as

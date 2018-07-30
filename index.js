@@ -81,6 +81,22 @@ function initialize(opts) {
     };
 }
 
+function login(opts) {
+    opts = Object.assign({}, defaultOpts, opts);
+
+    return (req, res, next) => {
+        const path = req.query.redirPath || opts.defaultRedirPath;
+
+        const redirUrl = encodeURIComponent(url.format({
+            protocol: opts.ssl? 'https' : 'http',
+            host: req.get('host'),
+            pathname: path,
+        }));
+
+        res.redirect(req.z.getLoginUrl(redirUrl));
+    };
+}
+
 function validate(opts, preventRedirect) {
     opts = Object.assign({}, defaultOpts, opts);
 
@@ -172,5 +188,5 @@ function setTokenCookies(req, res, opts) {
 }
 
 module.exports = {
-    initialize, validate, logout,
+    login, initialize, validate, logout,
 };
