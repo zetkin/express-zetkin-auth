@@ -31,24 +31,7 @@ function initialize(opts) {
         });
 
         let session = req.cookies[opts.sessionCookieName];
-        if (session) {
-            try {
-                const [ encrypted, ivHex ] = session.split('$');
-                const ivBuf = Buffer.from(ivHex, 'hex');
-                const decipher = crypto.createDecipheriv('aes192', opts.secret, ivBuf);
-
-                let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-                decrypted += decipher.final('utf8');
-
-                req.z.setToken(decrypted);
-            }
-            catch (err) {
-                res.clearCookie(opts.tokenCookieName);
-                res.clearCookie(opts.sessionCookieName);
-            }
-            next();
-        }
-        else if (req.query.code) {
+        if (req.query.code) {
             const callbackUrl = url.format({
                 protocol: opts.ssl? 'https' : 'http',
                 host: req.get('host'),
@@ -74,6 +57,23 @@ function initialize(opts) {
                 .catch(err => {
                     res.redirect(opts.defaultRedirPath);
                 });
+        }
+        else if (session) {
+            try {
+                const [ encrypted, ivHex ] = session.split('$');
+                const ivBuf = Buffer.from(ivHex, 'hex');
+                const decipher = crypto.createDecipheriv('aes192', opts.secret, ivBuf);
+
+                let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+                decrypted += decipher.final('utf8');
+
+                req.z.setToken(decrypted);
+            }
+            catch (err) {
+                res.clearCookie(opts.tokenCookieName);
+                res.clearCookie(opts.sessionCookieName);
+            }
+            next();
         }
         else {
             next();
