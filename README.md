@@ -33,6 +33,7 @@ app.get('/logout', auth.logout());
 app.get('/my/page', auth.validate(authOpts), (req, res) => {
     // Because initialize() ran earlier, req.z exists
     req.z.resource('users', 'me')
+        .get()
         .then(res => {
             res.send('Hello ' + res.data.email);
         });
