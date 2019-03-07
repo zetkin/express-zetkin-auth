@@ -28,6 +28,7 @@ function initialize(opts) {
             clientId: opts.app.id,
             clientSecret: opts.app.secret,
             zetkinDomain: opts.zetkinDomain,
+            ssl: opts.ssl,
         });
 
         let session = req.cookies[opts.sessionCookieName];
