@@ -121,11 +121,10 @@ function validate(opts, preventRedirect) {
                             query: req.query,
                         }));
 
-                        let loginUrl = '//login.' + process.env.ZETKIN_DOMAIN + '/upgrade'
-                            + '?access_token=' + req.z.getTokenData().access_token
-                            + '&redirect_uri=' + redirUrl;
+                        const level = 'level' + opts.minAuthLevel;
+                        const scopes = [ level ];
 
-                        res.redirect(loginUrl);
+                        res.redirect(req.z.getLoginUrl(redirUrl, scopes));
 
                         return;
                     }
@@ -148,7 +147,13 @@ function validate(opts, preventRedirect) {
                         query: req.query,
                     }));
 
-                    res.redirect(req.z.getLoginUrl(redirUrl));
+                    const scopes = [];
+
+                    if (opts.minAuthLevel) {
+                        scopes.push('level' + opts.minAuthLevel);
+                    }
+
+                    res.redirect(req.z.getLoginUrl(redirUrl, scopes));
                 }
             });
     }
