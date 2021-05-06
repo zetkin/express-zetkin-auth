@@ -88,11 +88,11 @@ function login(opts) {
     return (req, res, next) => {
         const path = req.query.redirPath || opts.defaultRedirPath;
 
-        const redirUrl = encodeURIComponent(url.format({
+        const redirUrl = url.format({
             protocol: opts.ssl? 'https' : 'http',
             host: req.get('host'),
             pathname: path,
-        }));
+        });
 
         res.redirect(req.z.getLoginUrl(redirUrl));
     };
@@ -114,12 +114,12 @@ function validate(opts, preventRedirect) {
                 if (opts.minAuthLevel) {
                     let session = result.data.data;
                     if (session.level < opts.minAuthLevel) {
-                        const redirUrl = encodeURIComponent(url.format({
+                        const redirUrl = url.format({
                             protocol: opts.ssl? 'https' : 'http',
                             host: req.get('host'),
                             pathname: req.baseUrl? (req.baseUrl + req.path) : req.path,
                             query: req.query,
-                        }));
+                        });
 
                         const level = 'level' + opts.minAuthLevel;
                         const scopes = [ level ];
@@ -140,12 +140,12 @@ function validate(opts, preventRedirect) {
                     next();
                 }
                 else {
-                    const redirUrl = encodeURIComponent(url.format({
+                    const redirUrl = url.format({
                         protocol: opts.ssl? 'https' : 'http',
                         host: req.get('host'),
                         pathname: req.baseUrl? (req.baseUrl + req.path) : req.path,
                         query: req.query,
-                    }));
+                    });
 
                     const scopes = [];
 
