@@ -1,6 +1,6 @@
 {
   "name": "express-zetkin-auth",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Express middleware for dealing with Zetkin authentication and authorization",
   "main": "index.js",
   "scripts": {
