@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/zetkin/express-zetkin-auth#readme",
   "peerDependencies": {
-    "zetkin": "^1.2.0",
+    "zetkin": "^1.4.0",
     "express": "^4.12.0"
   }
 }

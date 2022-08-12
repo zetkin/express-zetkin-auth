@@ -13,6 +13,7 @@ const defaultOpts = {
     zetkinDomain: 'zetk.in',
     minAuthLevel: undefined,
     secret: null,
+    heartbeatMaxAge: 45 * 60, // 45 minutes
 };
 
 
@@ -159,6 +160,37 @@ function validate(opts, preventRedirect) {
     }
 }
 
+function heartbeat(opts) {
+    opts = Object.assign({}, defaultOpts, opts);
+
+    return async (req, res) => {
+        try {
+            await req.z.resource('session');
+            const tokenData = req.z.getTokenData();
+
+            const payload64 = Buffer.from(tokenData.access_token.split('.')[1], 'base64');
+            const payloadJson = payload64.toString('ascii');
+            const payload = JSON.parse(payloadJson);
+            const iat = new Date(payload.iat * 1000);
+            const now = new Date();
+            const age = now - iat;
+
+            const MAX_AGE = opts.heartbeatMaxAge * 1000;
+
+            if (age > MAX_AGE) {
+                await req.z.refresh();
+
+                setTokenCookies(req, res, opts);
+            }
+
+            res.status(200).end();
+        } catch (err) {
+            console.error(err);
+            res.status(200).end();
+        }
+    };
+}
+
 function logout(opts) {
     opts = Object.assign({}, defaultOpts, opts);
 
@@ -194,5 +226,9 @@ function setTokenCookies(req, res, opts) {
 }
 
 module.exports = {
-    login, initialize, validate, logout,
+    heartbeat,
+    initialize,
+    login,
+    logout,
+    validate,
 };
